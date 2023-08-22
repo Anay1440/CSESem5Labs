@@ -1,0 +1,16 @@
+He didn't understand why the bird wanted to ride the bicycle.
+Mothers spend months of their lives waiting on their children.
+He shaved the peach to prove a point.
+She works two jobs to make ends meet; at least, that was her reason for not having time to join us.
+Iron pyrite is the most foolish of all minerals.
+She works two jobs to make ends meet; at least, that was her reason for not having time to join us.
+Iron pyrite is the most foolish of all minerals.
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+char ch, st[100];
+int inFileDesc, i = 0, lineStart = -1, comparInd = 0, substrlen, lineNo = 1;
