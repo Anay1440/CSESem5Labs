@@ -8,6 +8,7 @@ int keywordsLen = 32;
 
 typedef struct token {
     char name[100];
+	char type[20];
     int row, col;
 } Token;
 
@@ -28,19 +29,37 @@ int check(char * word) {
 		i++;
 	}
 	if (isNum)
-		return 1;
+		return 2;
     if ((word[0] == '\'' || word[0] == '"') && (word[i - 1] == '\'' || word[i - 1] == '"'))
-        return 1;
+        return 3;
 	return 0;
 }
 
-void printToken(char * tokenName, int row, int col) {
-	printf("<%s,%d,%d>", tokenName, row, col);
+void * getType(char * typeStr, int type) {
+	if (type == 1)
+		strcpy(typeStr, "Keyword");
+	else if (type == 2)
+		strcpy(typeStr, "Number");
+	else if (type == 3)
+		strcpy(typeStr, "String literal");
+	else if (type == 4)
+		strcpy(typeStr, "Separator");
+	else
+		strcpy(typeStr, "Identifier");
 }
 
-void insertNode(Node * prev, char * name, int row, int col) {
+void printToken(char * tokenName, int type, int row, int col) {
+	char typeStr[40];
+	getType(typeStr, type);
+	printf("<%s,%s,%d,%d>", tokenName, typeStr, row, col);
+}
+
+void insertNode(Node * prev, char * name, int type, int row, int col) {
+	char typeStr[40];
+	getType(typeStr, type);
     Node * new = (Node *) malloc(sizeof(Node));
     strcpy(new->token.name, name);
+	strcpy(new->token.type, typeStr);
     new->token.row = row;
     new->token.col = col;
     new->next = NULL;
@@ -63,6 +82,7 @@ void main() {
 	if (fptr1 != NULL) {
 		char ch = fgetc(fptr1);
 		char word[100];
+		int type;
 
 		while (ch != EOF) {
 					
@@ -101,13 +121,15 @@ void main() {
                         int oldCol = col;
 						if (i > 0) {
 							col += strlen(word);
-							if (!check(word))
+							type = check(word);
+							if (!type)
 								strcpy(word, "id");
-                            insertNode(list, word, row, col);
+                            insertNode(list, word, type, row, col);
                             list = list -> next;
-                            printToken(word, row, oldCol);
+                            printToken(word, type, row, oldCol);
                             oldCol = col;
                             i = 0;
+							type = 4;
                             strcpy(word, "\0");
 						}
 						if (ch == '=') {
@@ -156,8 +178,7 @@ void main() {
 							ch = fgetc(fptr1);
 							if (ch == '=')
 								word[i++] = ch;
-							else
-								fseek(fptr1, -1, SEEK_CUR);
+							fseek(fptr1, -1, SEEK_CUR);
 							word[i] = '\0';
 						}
 						else if (ch == '+') {
@@ -192,8 +213,8 @@ void main() {
                         else if (ch == ' ')
                             i = 1;
                         if (strcmp(word, "\0") != 0) {
-                            printToken(word, row, oldCol);
-                            insertNode(list, word, row, col);
+                            printToken(word, type, row, oldCol);
+                            insertNode(list, word, type, row, col);
                             list = list -> next;
                         }
 						strcpy(word, "\0");
@@ -217,7 +238,7 @@ void main() {
 
         printf("\nTOKENS:\n");
         while (root != NULL) {
-            printToken(root->token.name, root->token.row, root->token.col);
+            printf("<%s,%s,%d,%d>", root->token.name, root->token.type, root->token.row, root->token.col);
             root = root -> next;
         }
 	}
