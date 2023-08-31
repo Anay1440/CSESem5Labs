@@ -27,16 +27,13 @@ void main() {
     write(pipeID, &n, sizeof(int)); // Setting it to 5 initially
 
     while(1) {
-        if (pipeID == -1) {
-            printf("Failed to open pipe\n");
-            exit(1);
-        }
+        
         read(pipeID, &n, sizeof(int));
-        if (n == 5) {
+        if (n >= 5) {
             printf("Producer could not produce because max goods are available\n");
             write(pipeID, &n, sizeof(int));
         }
-        else if (n < 5) {
+        else {
             n += 1;
             write(pipeID, &n, sizeof(int));
             printf("Producer produced goods. Total number of goods now: %d\n", n);
