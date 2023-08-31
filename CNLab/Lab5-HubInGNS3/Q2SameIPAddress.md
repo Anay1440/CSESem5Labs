@@ -1,0 +1,1 @@
+Having two computers on the same network with the same IP address is not allowed by GNS3.
