@@ -11,14 +11,12 @@ void main() {
 		fptr2 = fopen("Out.txt", "w+");
 		char ch = fgetc(fptr1);
 
-		while (ch != EOF) {
-					
+		while (ch != EOF) {	
 			if (lineStart == 1 && ch == '\n') {
 					ch = fgetc(fptr1);
 					continue;
 			}
 			else {
-
 				if (ch == '"' && !insideQuotes)
 					insideDoubleQuotes = !insideDoubleQuotes;
 				if (ch == '\'' && !insideDoubleQuotes)
@@ -33,6 +31,30 @@ void main() {
 					while (ch != EOF && (ch == '\t' || ch == ' '))
 						ch = fgetc(fptr1);
 				}
+				else if (ch == '/') {
+					ch = fgetc(fptr1);
+					if (ch == '/') {
+						while (ch != EOF && (ch != '\n'))
+							ch = fgetc(fptr1);
+					}
+					else if (ch == '*') {
+						do {
+							ch = fgetc(fptr1);
+							if (ch == '*') {
+								ch = fgetc(fptr1);
+								if (ch == '/') {
+									ch = fgetc(fptr1);
+									break;
+								}
+							}
+						} while (ch != EOF);
+					}
+					else {
+						fputc('/', fptr2);
+						fputc(ch, fptr2);
+						ch = fgetc(fptr1);
+					}
+				}
 				else {
 					if (ch == '\n') {
 						insideQuotes = 0;
@@ -45,7 +67,6 @@ void main() {
 					ch = fgetc(fptr1);
 				}
 			}
-
 		}
 		printf("Output file Out.txt created\n");
 	}
