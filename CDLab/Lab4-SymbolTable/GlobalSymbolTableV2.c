@@ -133,17 +133,18 @@ int preliminaryScanner(char * fileName) {
 					insideDoubleQuotes = !insideDoubleQuotes;
 				if (ch == '\'' && !insideDoubleQuotes)
 					insideQuotes = !insideQuotes;
-				if (ch == '#' && !insideQuotes && !insideDoubleQuotes) {
+				if (ch == '#' && !insideQuotes && !insideDoubleQuotes && lineStart == 1) {
 					while (ch != EOF && (ch != '\n'))
 						ch = fgetc(fptr1);
 					lineStart = 1;
 				}
 				else if ((ch == '\t' || ch == ' ') && !insideQuotes && !insideDoubleQuotes) {
+                    lineStart = 0;
 					fputc(' ', fptr2);
 					while (ch != EOF && (ch == '\t' || ch == ' '))
 						ch = fgetc(fptr1);
 				}
-				else if (ch == '/') {
+				else if (ch == '/' && !insideQuotes && !insideDoubleQuotes) {
 					ch = fgetc(fptr1);
 					if (ch == '/') {
 						while (ch != EOF && (ch != '\n'))
@@ -189,88 +190,6 @@ int preliminaryScanner(char * fileName) {
         return 0;
 }
 
-
-// INCOMPLETE FUNCTIONS BELOW
-int checkArithmeticOp(char ch, char * word, FILE * fptr1) {
-    //Checks for +, ++, -, --, *, /, %
-    int i;
-    if (ch == '+') {
-        i = 0;
-        word[i++] = ch;
-        ch = fgetc(fptr1);
-        if (ch == '+')
-            word[i++] = ch;
-        else
-            fseek(fptr1, -1, SEEK_CUR);
-        word[i] = '\0';
-    }
-    else if (ch == '-') {
-        i = 0;
-        word[i++] = ch;
-        ch = fgetc(fptr1);
-        if (ch == '-')
-            word[i++] = ch;
-        else
-            fseek(fptr1, -1, SEEK_CUR);
-        word[i] = '\0';
-    }
-    else if (ch == '*') {
-        i = 0;
-        word[i++] = ch;
-        word[i] = '\0';
-    }
-    else if (ch == '/') {
-        i = 0;
-        word[i++] = ch;
-        word[i] = '\0';
-    }
-    else if (ch == '%') {
-        i = 0;
-        word[i++] = ch;
-        word[i] = '\0';
-    }
-    else
-        return 0;
-    return 1;
-}
-
-int checkLogicalOp(char ch, char * word, FILE * fptr1) {
-    //Checks for &&, ||, !, !=
-    int i;
-    if (ch == '&') {
-        i = 0;
-        word[i++] = ch;
-        ch = fgetc(fptr1);
-        if (ch == '&')
-            word[i++] = ch;
-        else
-            fseek(fptr1, -1, SEEK_CUR);
-        word[i] = '\0';
-    }
-    else if (ch == '|') {
-        i = 0;
-        word[i++] = ch;
-        ch = fgetc(fptr1);
-        if (ch == '|')
-            word[i++] = ch;
-        else
-            fseek(fptr1, -1, SEEK_CUR);
-        word[i] = '\0';
-    }
-    else if (ch == '!') {
-        i = 0;
-        word[i++] = ch;
-        ch = fgetc(fptr1);
-        if (ch == '=')
-            word[i++] = ch;
-        fseek(fptr1, -1, SEEK_CUR);
-        word[i] = '\0';
-    }
-    else
-        return 0;
-    return 1;
-}
-
 Node * getNextToken() {
     tokenListRoot = tokenListRoot -> next;
     return tokenListRoot;
@@ -299,7 +218,7 @@ void main() {
         FILE * fptr1 = fopen("Out.txt", "r");
         if (fptr1 != NULL) {
 
-	        int insideQuotes = 0, insideDoubleQuotes = 0, i = 0, row = 1, col = 1, type, dataTypeInd = -1;
+	        int insideQuotes = 0, insideDoubleQuotes = 0, i = 0, row = 1, col = 1, type = 4, dataTypeInd = -1;
             char ch = fgetc(fptr1);
             char word[100];
 
@@ -345,6 +264,7 @@ void main() {
                                     if (chTemp == '(') {
                                         while (chTemp != ')') {
                                             chTemp = fgetc(fptr1);
+                                            offset++;
                                             if (chTemp == ',') {
                                                 if (numberOfArgs == 0)
                                                     numberOfArgs = 2;
@@ -445,7 +365,7 @@ void main() {
                                 fseek(fptr1, -1, SEEK_CUR);
                             word[i] = '\0';
                         }
-                        else if (ch == '}' || ch == ']' || ch == ';' || ch == '{' || ch == '[' || ch == '^' || ch == '*' || ch == '/' || ch == '(' || ch == ')' || ch == ',' || ch == '.') {
+                        else if (ch == '}' || ch == ']' || ch == ';' || ch == '{' || ch == '[' || ch == '^' || ch == '*' || ch == '/' || ch == '(' || ch == ')' || ch == ',' || ch == '.' || ch == '#') {
                             i = 0;
                             word[i++] = ch;
                             word[i] = '\0';
@@ -478,16 +398,16 @@ void main() {
             
             }
 
-            printf("\nTOKENS:\n");
-            Node * temp;
-            while ((temp = getNextToken()) != NULL) {
-                printf("<%s,%s,%d,%d>", temp->token.name, temp->token.type, temp->token.row, temp->token.col);
-            }
-            printf("\nSYMBOL TABLE:\nNo.\tName\tType\tDataType\tSize\tNumber of args\n");
+            // printf("\nTOKENS:\n");
+            // Node * temp;
+            // while ((temp = getNextToken()) != NULL) {
+            //     printf("<%s,%s,%d,%d>", temp->token.name, temp->token.type, temp->token.row, temp->token.col);
+            // }
+            printf("\nSYMBOL TABLE:\nNo.\tName\tType\tDataType\tNumber of args\n");
             i = 1;
             symbolListRoot = symbolListRoot -> next;
             while (symbolListRoot != NULL) {
-                printf("%d\t%s\t%s\t%s\t\t%d\t\t%d\n", i++, symbolListRoot->symbol.name, symbolListRoot->symbol.type, symbolListRoot->symbol.dataType, symbolListRoot->symbol.size, symbolListRoot->symbol.numberOfArgs);
+                printf("%d\t%s\t%s\t%s\t\t%d\n", i++, symbolListRoot->symbol.name, symbolListRoot->symbol.type, symbolListRoot->symbol.dataType, symbolListRoot->symbol.numberOfArgs);
                 symbolListRoot = symbolListRoot -> next;
             }
         }
