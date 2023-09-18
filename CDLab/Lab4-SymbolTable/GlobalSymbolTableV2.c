@@ -117,7 +117,7 @@ int symbolExists(SymbolNode * root, char * name) {
 }
 
 int preliminaryScanner(char * fileName) {
-    int lineStart = 1, insideQuotes = 0, insideDoubleQuotes = 0;
+    int lineStart = 1, insideQuotes = 0, insideDoubleQuotes = 0, insideFunction = 0;
     FILE * fptr1 = fopen(fileName, "r");
 	if (fptr1 != NULL) {
 		FILE * fptr2 = fopen("Out.txt", "w+");
@@ -133,7 +133,7 @@ int preliminaryScanner(char * fileName) {
 					insideDoubleQuotes = !insideDoubleQuotes;
 				if (ch == '\'' && !insideDoubleQuotes)
 					insideQuotes = !insideQuotes;
-				if (ch == '#' && !insideQuotes && !insideDoubleQuotes && lineStart == 1) {
+				if (ch == '#' && !insideQuotes && !insideDoubleQuotes && insideFunction == 0) {
 					while (ch != EOF && (ch != '\n'))
 						ch = fgetc(fptr1);
 					lineStart = 1;
@@ -176,6 +176,8 @@ int preliminaryScanner(char * fileName) {
 					}
 					else
 						lineStart = 0;
+                    if (ch == '{')
+                        insideFunction = 1;
 					fputc(ch, fptr2);
 					ch = fgetc(fptr1);
 				}
@@ -218,7 +220,7 @@ void main() {
         FILE * fptr1 = fopen("Out.txt", "r");
         if (fptr1 != NULL) {
 
-	        int insideQuotes = 0, insideDoubleQuotes = 0, i = 0, row = 1, col = 1, type = 4, dataTypeInd = -1;
+	        int insideQuotes = 0, insideDoubleQuotes = 0, i = 0, row = 1, col = 1, type = 4, dataTypeInd = -1, idNum = 1;
             char ch = fgetc(fptr1);
             char word[100];
 
@@ -282,6 +284,10 @@ void main() {
                                     fseek(fptr1, -offset, SEEK_CUR);
                                 }
                                 strcpy(word, "id");
+                                char numInStr[10];
+                                sprintf(numInStr, "%d", idNum);
+                                strcat(word, numInStr);
+                                idNum++;
                             }
                             int ind = checkType(word);
                             if (ind != -1)
