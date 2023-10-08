@@ -6,7 +6,7 @@
 #include "Util_LA.c"
 
 void IDList();
-Node * bufToken;
+Token * bufToken;
 
 int checkIfID(char * name) { 
     if ((name[0] == 'i') && (name[1] == 'd'))
@@ -28,38 +28,38 @@ void invalid() {
 }
 
 void AssignStatementPrime() {
-    Node * token = getNextToken();
+    Token * token = getNextToken();
     if (token == NULL)
         invalid();
-    if ((!checkIfID(token->token.name)) && (!checkIfNum(token->token.name)))
+    if ((!checkIfID(token->name)) && (!checkIfNum(token->name)))
         invalid();
     token = getNextToken();
-    if ((token == NULL) || (strcmp(token->token.name, ";") != 0))
+    if ((token == NULL) || (strcmp(token->name, ";") != 0))
         invalid();
 }
 
-void AssignStatement(Node * token) {
-    if (checkIfID(token->token.name)) {
+void AssignStatement(Token * token) {
+    if (checkIfID(token->name)) {
         token = getNextToken();
         if (token == NULL)
             invalid();
-        if (strcmp(token->token.name, "=") == 0)
+        if (strcmp(token->name, "=") == 0)
             AssignStatementPrime();
     }
     else invalid();
 }
 
-Node * IDListPrime() {
-    Node * token = getNextToken();
-    if (strcmp(token->token.name, ",") == 0) 
+Token * IDListPrime() {
+    Token * token = getNextToken();
+    if (strcmp(token->name, ",") == 0) 
         IDList();
     else return token;
     return NULL;
 }
 
 void IDList() {
-    Node * token = getNextToken();
-    if (checkIfID(token->token.name)) {
+    Token * token = getNextToken();
+    if (checkIfID(token->name)) {
         token = IDListPrime();
         if (token != NULL)
             bufToken = token;
@@ -68,36 +68,36 @@ void IDList() {
 }
 
 void Declarations() {
-    Node * token = getNextToken();
-    if (checkType(token->token.name) != -1) {
+    Token * token = getNextToken();
+    if (checkDataType(token->name) != -1) {
         IDList();
-        if (strcmp(bufToken->token.name, ";") == 0)
+        if (strcmp(bufToken->name, ";") == 0)
             Declarations();
     }
     else bufToken = token;
 }
 
 int Program() {
-    Node * token = getNextToken();
-    if (strcmp(getIDName(token->token.name), "main")) {
+    Token * token = getNextToken();
+    if (strcmp(getIDName(token->name), "main") == 0) {
         token = getNextToken();
         if (token == NULL)
             invalid();
-        if (strcmp(token->token.name, "(") == 0) {
+        if (strcmp(token->name, "(") == 0) {
             token = getNextToken();
             if (token == NULL)
                 invalid();
-            if (strcmp(token->token.name, ")") == 0) {
+            if (strcmp(token->name, ")") == 0) {
                 token = getNextToken();
                 if (token == NULL)
                     invalid();
-                if (strcmp(token->token.name, "{") == 0) {
+                if (strcmp(token->name, "{") == 0) {
                     Declarations();
                     AssignStatement(bufToken);
                     token = getNextToken();
                     if (token == NULL)
                         invalid();
-                    if (strcmp(token->token.name, "}") == 0)
+                    if (strcmp(token->name, "}") == 0)
                         return 1;
                 }
             }
@@ -115,7 +115,7 @@ void main() {
     strcpy(fileName, "Text.txt");
 
     preliminaryScanner(fileName);
-    execLA("Out.txt");
+    initLA("Out.txt");
 
     int res = Program();
 
