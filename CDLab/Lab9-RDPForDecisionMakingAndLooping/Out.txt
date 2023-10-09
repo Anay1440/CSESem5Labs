@@ -1,0 +1,6 @@
+main()
+{
+int a,b[2],sum, flag;
+a = 5 * 5 + 2; 
+flag = a <= 9;
+}
