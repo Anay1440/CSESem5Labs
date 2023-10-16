@@ -7,7 +7,30 @@ multiline comment
 
 main()
 {
-int a,b[2],sum, flag;
-a = 5 * 5 + 2; // this is a single line comment
-flag = a <= 9;
+    int a,b[2],sum, flag, i;
+    a = 5 * 5 + 2; // this is a single line comment
+    flag = a <= 9;
+    if (a == 4) {
+        sum = 3;
+    }
+    else {
+        sum = 5;
+    }
+    while (flag) {
+        for (i = 0; i < 5; i = i + 1) {
+            sum = sum + 1;
+            flag = 2;
+            if (a == 4) {
+                sum = 3;
+            }
+            else {
+                sum = 5;
+            }
+        }
+    }
+    switch(a) {
+        case 'a': flag = 1;
+        sum = 6;
+        default: flag = 0;
+    }   
 }

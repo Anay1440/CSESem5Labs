@@ -23,24 +23,37 @@ int checkIfNum(char * name) {
     return 1;
 }
 
-void invalid(Token * token) {
-    if (token == NULL)
-        printf("Unexpected end of code\n");
+void invalid(Token * token, char * name) {
+    if (token == NULL) {
+        if (name != NULL) printf("Unexpected end of code. Expected: %s\n", name);
+        else printf("Unexpected end of code.\n");
+    }
     else {
-        if (checkIfID(token->name)) 
-            printf("Error at: %s. Row: %d, Col: %d", getIDName(token->name), token->row, token->col);
-        else
-            printf("Error at: %s. Row: %d, Col: %d", token->name, token->row, token->col);
+        if (checkIfID(token->name)) {
+            if (name != NULL) printf("Error at: %s. Row: %d, Col: %d. Expected: %s\n", getIDName(token->name), token->row, token->col, name);
+            else printf("Error at: %s. Row: %d, Col: %d\n", getIDName(token->name), token->row, token->col);
+        }
+        else {
+            if (name != NULL) printf("Error at: %s. Row: %d, Col: %d. Expected : %s\n", token->name, token->row, token->col, name);
+            else printf("Error at: %s. Row: %d, Col: %d\n", token->name, token->row, token->col);
+        }
     }
     exit(1);
 }
 
+void AlphaNum() {
+    Token * token = getNextToken();
+    if (!checkIfNum(token->name)) {
+        if (!(token->name[0] == '\'' && token->name[strlen(token->name) - 1] == '\''))
+            invalid(token, "Alphanum");
+    }
+}
+
 void Factor() {
     Token * token = getNextToken();
-    if (token == NULL)
-        invalid(token);
+    if (token == NULL) invalid(token, NULL);
     if (!(checkIfID(token->name) || checkIfNum(token->name))) 
-        invalid(token);
+        invalid(token, "Identifier or Number");
 }
 
 int MulOp(Token * token) {
@@ -57,8 +70,7 @@ int AddOp(Token * token) {
 
 void TermPrime() { // Changes bufToken
     Token * token = getNextToken();
-    if (token == NULL)
-        invalid(token);
+    if (token == NULL) invalid(token, NULL);
     int res = MulOp(token);
     if (res) {
         Factor();
@@ -107,8 +119,7 @@ void Expression() { // Changes bufToken
 int AssignStatement(Token * token) { // Changes bufToken. Returns 1 if epsilon
     if (checkIfID(token->name)) {
         token = getNextToken();
-        if (token == NULL)
-            invalid(token);
+        if (token == NULL) invalid(token, "=");
         if (strcmp(token->name, "=") == 0)
             Expression();
     }
@@ -119,91 +130,156 @@ void DecisionStatementPrime() { // Changes bufToken
     Token * token = getNextToken();
     if (strcmp(token->name, "else") == 0) {
         token = getNextToken();
-        if (token == NULL)
-            invalid(token);
+        if (token == NULL) invalid(token, "{");
         if (strcmp(token->name, "{") == 0) {
             StatementList(NULL);
             token = bufToken;
             if (strcmp(token->name, "}") != 0) 
-                invalid(token);
+                invalid(token, "}");
+            bufToken = getNextToken();
+            if (bufToken == NULL) invalid(bufToken, NULL);
         }
+        else invalid(token, "{");
     }
     else bufToken = token;
+}
+
+int Case(Token * token) { // Returns 1 if epsilon. Changes bufToken
+    if (strcmp(token->name, "case") == 0) {
+        AlphaNum();
+        token = getNextToken();
+        if (token == NULL) invalid(token, ":");
+        if (strcmp(token->name, ":") == 0) 
+            StatementList(NULL);
+        else invalid(token, ":");
+    }
+    else if (strcmp(token->name, "default") == 0) {
+        token = getNextToken();
+        if (token == NULL) invalid(token, ":");
+        if (strcmp(token->name, ":") == 0) 
+            StatementList(NULL);
+        else invalid(token, ":");
+    }
+    else return 1;
+}
+
+void CaseList(Token * token) { // Returns 1 if epsilon. Changes bufToken
+    int res = Case(token);
+    if (res != 1) 
+        CaseList(bufToken);
+    else 
+        bufToken = token;
 }
 
 int DecisionStatement(Token * token) { // Changes bufToken
     if (strcmp(token->name, "if") == 0) {
         token = getNextToken();
-        if (token == NULL)
-            invalid(token);
+        if (token == NULL) invalid(token, NULL);
         if (strcmp(token->name, "(") == 0) {
             Expression();
             token = bufToken;
-            if (strcmp(token->name, "{") == 0) {
-                StatementList(NULL);
-                token = bufToken;
-                if (strcmp(token->name, "}") == 0) 
-                    DecisionStatementPrime();
+            if (strcmp(token->name, ")") == 0) {
+                token = getNextToken();
+                if (token == NULL) invalid(token, "{");
+                if (strcmp(token->name, "{") == 0) {
+                    StatementList(NULL);
+                    token = bufToken;
+                    if (strcmp(token->name, "}") == 0) 
+                        DecisionStatementPrime();
+                    else invalid(token, "}");
+                }
+                else invalid(token, "{");
             }
-            else invalid(token);
+            else invalid(token, ")");
         }
-        else invalid(token);
+        else invalid(token, "(");
+    }
+    else if (strcmp(token->name, "switch") == 0) {
+        token = getNextToken();
+        if (token == NULL) invalid(token, "(");
+        if (strcmp(token->name, "(") == 0) {
+            Expression();
+            token = bufToken;
+            if (strcmp(token->name, ")") == 0) {
+                token = getNextToken();
+                if (token == NULL) invalid(token, "{");
+                if (strcmp(token->name, "{") == 0) {
+                    token = getNextToken();
+                    CaseList(token);
+                    token = bufToken;
+                    if (strcmp(token->name, "}") != 0) 
+                        invalid(token, "}");
+                    bufToken = getNextToken();
+                    if (bufToken == NULL) invalid(bufToken, NULL);
+                }
+                else invalid(token, "{");
+            }
+            else invalid(token, ")");
+        }
+        else invalid(token, "(");
     }
     else return 1;
 }
 
-int LoopingStatement(Token * token) { 
+int LoopingStatement(Token * token) { // Returns 1 if epsilon
     if (strcmp(token->name, "while") == 0) {
         token = getNextToken();
-        if (token == NULL)
-            invalid(token);
+        if (token == NULL) invalid(token, "(");
         if (strcmp(token->name, "(") == 0) {
             Expression();
             token = bufToken;
-            if (strcmp(token->name, "{") == 0) {
-                StatementList(NULL);
-                token = bufToken;
-                if (strcmp(token->name, "}") != 0) 
-                    invalid(token);
+            if (strcmp(token->name, ")") == 0) {
+                token = getNextToken();
+                if (token == NULL) invalid(token, "{");
+                if (strcmp(token->name, "{") == 0) {
+                    StatementList(NULL);
+                    token = bufToken;
+                    if (strcmp(token->name, "}") != 0) 
+                        invalid(token, "}");
+                    bufToken = getNextToken();
+                    if (bufToken == NULL) invalid(bufToken, NULL);
+                }
+                else invalid(token, "{");
             }
-            else invalid(token);
+            else invalid(token, ")");
         }
-        else invalid(token);
+        else invalid(token, "(");
     }
     else if (strcmp(token->name, "for") == 0) {
         token = getNextToken();
-        if (token == NULL)
-            invalid(token);
+        if (token == NULL) invalid(token, "(");
         if (strcmp(token->name, "(") == 0) {
             token = getNextToken();
             int res = AssignStatement(token);
             if (res == 1)
-                invalid(token);
+                invalid(token, "Assignment Statement");
             token = bufToken;
             Expression();
             token = bufToken;
             if (strcmp(token->name, ";") != 0)
-                invalid(token);
+                invalid(token, ";");
             token = getNextToken();
             res = AssignStatement(token);
             if (res == 1)
-                invalid(token);
+                invalid(token, "Assignment Statement");
             token = bufToken;
             if (strcmp(token->name, ")") != 0)
-                invalid(token);
+                invalid(token, ")");
             token = getNextToken();
             if (strcmp(token->name, "{") == 0) {
                 StatementList(NULL);
                 token = bufToken;
                 if (strcmp(token->name, "}") != 0) 
-                    invalid(token);
+                    invalid(token, "}");
+                bufToken = getNextToken();
+                if (bufToken == NULL) invalid(bufToken, NULL);
             }
-            else invalid(token);
+            else invalid(token, "{");
         }
-        else invalid(token);
+        else invalid(token, "(");
     }
-    else invalid(token);
-    return 1;
+    else return 1;
+    return 0;
 }
 
 int Statement(Token * token) { // Returns 1 if epsilon, 0 otherwise and Changes bufToken
@@ -211,28 +287,27 @@ int Statement(Token * token) { // Returns 1 if epsilon, 0 otherwise and Changes 
     if (res != 1) {
         token = bufToken;
         if ((token == NULL) || (strcmp(token->name, ";") != 0))
-            invalid(token);
+            invalid(token, ";");
         bufToken = getNextToken();
+        if (bufToken == NULL) invalid(bufToken, NULL);
     }
     else {
         res = DecisionStatement(token);
-        if (res == 1) {
+        if (res == 1)
             res = LoopingStatement(token);
-            if (res == 1)
-                bufToken = getNextToken();
-        }
     }
     return res;
 }
 
 void StatementList(Token * token) { // Changes bufToken
-    if (token == NULL) 
+    if (token == NULL) {
         token = getNextToken();
-    
+        if (token == NULL) invalid(token, NULL);   
+    }
     int res = Statement(token);
     if (res != 1)
         StatementList(bufToken);
-    else
+    else 
         bufToken = token;
 }
 
@@ -242,14 +317,12 @@ Token * IDListPrime() {
         IDList();
     else if (strcmp(token->name, "[") == 0) {
         token = getNextToken();
-        if (token == NULL)
-            invalid(token);
+        if (token == NULL) invalid(token, "Number");
         if (checkIfNum(token->name)) {
             token = getNextToken();
-            if (token == NULL)
-                invalid(token);
+            if (token == NULL) invalid(token, NULL);
             if (strcmp(token->name, "]") != 0)
-                invalid(token);
+                invalid(token, "]");
             else {
                 token = getNextToken();
                 if (strcmp(token->name, ",") == 0) 
@@ -258,7 +331,7 @@ Token * IDListPrime() {
                     return token;
             }
         }
-        else invalid(token);
+        else invalid(token, "Number");
     }
     else return token;
     return NULL;
@@ -266,20 +339,18 @@ Token * IDListPrime() {
 
 void IDList() {
     Token * token = getNextToken();
-    if (token == NULL)
-        invalid(token);
+    if (token == NULL) invalid(token, "Identifier");
     if (checkIfID(token->name)) {
         token = IDListPrime();
         if (token != NULL)
             bufToken = token;
     }
-    else invalid(token);
+    else invalid(token, "Identifier");
 }
 
 void Declarations() {
     Token * token = getNextToken();
-    if (token == NULL)
-        invalid(token);
+    if (token == NULL) invalid(token, "Datatype");
     if (checkDataType(token->name) != -1) {
         IDList();
         token = bufToken;
@@ -293,22 +364,18 @@ int Program() {
     Token * token = getNextToken();
     if (strcmp(getIDName(token->name), "main") == 0) {
         token = getNextToken();
-        if (token == NULL)
-            invalid(token);
+        if (token == NULL) invalid(token, "(");
         if (strcmp(token->name, "(") == 0) {
             token = getNextToken();
-            if (token == NULL)
-                invalid(token);
+            if (token == NULL) invalid(token, ")");
             if (strcmp(token->name, ")") == 0) {
                 token = getNextToken();
-                if (token == NULL)
-                    invalid(token);
+                if (token == NULL) invalid(token, "{");
                 if (strcmp(token->name, "{") == 0) {
                     Declarations();
                     StatementList(bufToken);
                     token = bufToken;
-                    if (token == NULL)
-                        invalid(token);
+                    if (token == NULL) invalid(token, "}");
                     if (strcmp(token->name, "}") == 0)
                         return 1;
                 }

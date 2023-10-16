@@ -97,7 +97,7 @@ Token * getCharOrStringLiteral(int type) {
         ch = fgetc(fptr);
     }
 
-    buf[i++] = '"';
+    buf[i++] = (type == 1 ? '\'' : '"');
     buf[i] = '\0';
 
     Token * new = (Token *) malloc(sizeof(Token));
